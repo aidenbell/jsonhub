@@ -1,4 +1,5 @@
 package ext_ci_match
+
 import "strings"
 
 /*
@@ -7,17 +8,17 @@ import "strings"
  * of unknown type.
  */
 func ExtCaseInsensitiveMatch(mval interface{}, sval map[string]interface{}) bool {
-	specif,ok := sval["value"]
+	specif, ok := sval["value"]
 	if !ok {
 		return false
 	}
 
-	specval,ok := specif.(string)
+	specval, ok := specif.(string)
 	if !ok {
 		return false
 	}
 
-	switch mcast := mval.(type) {	
+	switch mcast := mval.(type) {
 	case string:
 		if strings.ToLower(specval) == strings.ToLower(mcast) {
 			return true

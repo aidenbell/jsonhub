@@ -7,7 +7,7 @@ import "github.com/aidenbell/jsonhub/exchange"
 
 func main() {
 	log.Println("JSON Message Queue")
-	
+
 	// Make an exchange
 	ex := exchange.NewExchange()
 	ex.Run()

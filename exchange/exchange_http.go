@@ -18,10 +18,10 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	flusher,ok := w.(http.Flusher)
+	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming not supported!", http.StatusInternalServerError)
-		return;
+		return
 	}
 
 	// Look for the `q` variable in the querystring before reading the body ...
@@ -30,8 +30,8 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if qvar != "" {
 		spec = qvar
 	} else {
-			
-		body,err := ioutil.ReadAll(r.Body)
+
+		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			http.Error(w, "Error reading MatchSpec", http.StatusInternalServerError)
 			return
@@ -48,26 +48,24 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	clientChan := make(chan Messager)
 
-	q := NewQueue(e,spec)
+	q := NewQueue(e, spec)
 
 	// Set some options on the queue
 	if pingOnly := vals.Get("ping_only"); pingOnly == "true" {
-		q.SetPingOnly(true);
+		q.SetPingOnly(true)
 	}
-	
+
 	/*
-	if distMethod := vals.Get("dm"), distMethod {
-		// TODO: Implement these
-	}*/
-	
-	
+		if distMethod := vals.Get("dm"), distMethod {
+			// TODO: Implement these
+		}*/
+
 	// Handle closing
 	closeNotify := w.(http.CloseNotifier).CloseNotify()
 	go func() {
-		<- closeNotify
+		<-closeNotify
 		q.RemoveClient(clientChan)
 	}()
 
@@ -76,25 +74,24 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Add ourselves as a client
 	go q.Run()
 	q.AddClient(clientChan)
-	
+
 	// Send some headers
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	
+
 	// Read from our client channel
 	// TODO use CloseNotifier to remove client from list
 	// and free those resources.
 	for {
-		msg := <- clientChan
+		msg := <-clientChan
 		out := fmt.Sprintf(
-			"event: message\ndata: %s\n\n", 
+			"event: message\ndata: %s\n\n",
 			strings.Replace(msg.Raw(), "\n", "\\n", -1))
 		w.Write([]byte(out))
 		flusher.Flush()
 	}
-	
 
 	q.RemoveClient(clientChan)
 }

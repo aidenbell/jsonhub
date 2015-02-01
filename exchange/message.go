@@ -12,7 +12,7 @@ type Messager interface {
 
 /*
  A JsonMessage that validates the message is really JSON
- */
+*/
 type JsonMessage struct {
 	raw string
 }

@@ -12,7 +12,7 @@ func DebugClient(die chan int) chan Messager {
 	// Goroutine to listen
 	go func() {
 		for {
-			<-ch;
+			<-ch
 			//fmt.Println("DebugClient() In:", m)
 			//die <- 1
 		}
