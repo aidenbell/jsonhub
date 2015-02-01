@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>jsonhub test client</title>
+	<script type="text/javascript" src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <style>
+        label {
+            display:block;
+        }
+
+        #sub_options textarea, #send textarea {
+            width:100%;
+            display:block;
+            height:200px;
+        }
+
+        #host_options, #sub_options, #incoming, #send {
+            border:1px solid #ccc;
+            margin:1em;
+            padding:1em;
+        }
+    </style>
+	<script type="text/javascript">
+        /*
+         * Probably the most horrid Javascript known to the Internet.
+         * Just for playing with the queue
+         */
+		function init() {
+			var events = null;
+
+			// Send rigging
+			$('#send_btn').click(function(){
+				var host = document.getElementById("host_url").value;
+				$.ajax({
+					type: "POST",
+					url: host,
+					data: $('#send_data').val()
+				});
+			});
+
+			document.getElementById("start_stop_sub").onclick = function(e) {
+				var host = document.getElementById("host_url").value;
+				if(events)
+					events.close();
+
+				ms = document.getElementById("subscription").value;
+				console.log("Providing spec",ms);
+				ms = encodeURIComponent(ms)
+				events = new EventSource(host+"?q="+ms);
+				events.onmessage = function(e) {
+					console.log("Message:",e);
+					var c = document.getElementById("incoming_pre").innerHTML;
+					document.getElementById("incoming_pre").innerHTML = c + "\n"+ e.data.replace(/\\n/g, "\n");
+				}
+				events.onerror = function(e) {
+					console.log("EVENT ERR",e);
+				}
+			};
+		}
+	</script>
+</head>
+<body onload="init()">
+    <h1>JSONHub Test Client</h1>
+
+    <div id="host_options">
+        <label>Host</label>
+        <input type="text" id="host_url" value="http://localhost:9977/" />
+    </div>
+
+    <div id="sub_options">
+        <label>Subscription Specification</label>
+        <textarea id="subscription">{
+    "name": "dave"
+}</textarea>
+        <button id="start_stop_sub">Subscribe</button>
+    </div>
+
+    <div id="send">
+        <label>JSON Data</label>
+        <textarea id="send_data" placeholder="JSON Here"></textarea>
+
+        <button id="send_btn">Send</button>
+    </div>
+
+    <div id="incoming">
+        <h2>Incoming messages</h2>
+        <pre id="incoming_pre">Waiting...</pre>
+    </div>
+</body>
+</html>
