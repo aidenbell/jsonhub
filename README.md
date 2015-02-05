@@ -48,7 +48,8 @@ Imagine an RFID office entry system for a shared office building. Every time a p
 ```
 
 ### Sub 1: Value Comparison
-An client could subscribe using the following patterns and obtain the above message if it was published to the exchange:
+An client could subscribe using the following pattern and obtain the details of any programmer aged 22
+accessing the building
 ```json
 {
   "age" : 22,
@@ -57,7 +58,7 @@ An client could subscribe using the following patterns and obtain the above mess
 ```
 
 ### Sub 2: Using Matcher Values
-This would provide all messages where the occupation is "Programmer" and the individual is 22 years old. We can match a bit more loosely:
+We can also use "matchers" to find all programmers older than 22 entering the building
 ```json
 {
   "age" : {
@@ -71,6 +72,20 @@ This would provide all messages where the occupation is "Programmer" and the ind
 }
 ```
 
+### Sub 3: Match Everything
+You can match against all messages using an empty subscription
+```json
+{}
+```
+This is because subscriptions match unless a portion of the pattern does *not*
+match against the message. Each attribute of a subscription object must match the message. If you provide no attributes, there are no match constraints to fail. This allows you to only list your constraints when matching without having to describe an entire object.
+
+## Matchers
+Aside from basic value comparison, subscriptions can contain special "matcher" objects that describe more complex matches in JSON format. The following matchers are supported (todo: link these to .md files)
+
+  * [Case insensitive string matching](https://github.com/aidenbell/jsonhub/blob/master/match_modules/ext_ci_match/README.md)
+  * GeoJSON based 'within'
+
 ## Server Sent Events
 Currently matching messages are polled via [Server Sent Events](http://dev.w3.org/html5/eventsource/). Websocket support and other protocols are planned.
 
@@ -82,6 +97,7 @@ Future and needed features include
   * Configurable message distribution for equivalent patterns (round-robin, random)
   * Negations in patterns
   * Various matchers
+  * Support for sending arrays of messages and providing arrays of subscriptions
 
 
 ## Disclaimer

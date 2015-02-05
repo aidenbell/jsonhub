@@ -207,7 +207,7 @@ func matchObject(parsed map[string]interface{}, parsed_spec map[string]interface
 				// extension for match result
 				extstr := ext.(string)
 				switch extstr {
-				case "case-insensitive-match":
+				case "case-insensitive":
 					matches = ext_ci_match.ExtCaseInsensitiveMatch(v, svcast)
 				case "geojson-within":
 					matches = ext_geojson.ExtGeoJSONWithin(v, svcast)
