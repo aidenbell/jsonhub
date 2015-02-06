@@ -5,10 +5,8 @@ import "fmt"
 import "io/ioutil"
 import "strings"
 
-/*
- * This allows the exchange to be a HTTP handler, creating queues
- * for new requests and reading from the queues.
- */
+// The exchange's HTTP handler. Bind this to a URL and it allows POSTing
+// JSON messages and subscribing using SSE
 func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var spec string
 
@@ -82,8 +80,6 @@ func (e *Exchange) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Read from our client channel
-	// TODO use CloseNotifier to remove client from list
-	// and free those resources.
 	for {
 		msg := <-clientChan
 		out := fmt.Sprintf(

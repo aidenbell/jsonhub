@@ -1,3 +1,9 @@
+// Package ext_geojson provides a simple GeoJSON matcher that allows you to
+// match against message values that are GeoJSON and fall within a polygon
+// defined in the subscription. Subscription values are polygons and message
+// values are points or polygons.
+// More GeoJSON matchers can be added to this package for things like intersection,
+// distance etc.
 package ext_geojson
 
 import _ "strings"
@@ -6,29 +12,9 @@ import "log"
 import "errors"
 import _ "fmt"
 
-/*
- * Takes a GeoJSON object `mval` and uses the GeoJSON object in `sval`
- * to determine if `mval` is within `sval` in some sense. The actual
- * geometry for `sval` is in sval['geojson']
- *
- * This extension expects sval['geojson'] to be a Polygon
- * and `sval` to be a polygon or point.
- *
- * Example spec:
- *
- * {
- * 		"_match": "geojson-within",
- 		"geojson": {
- 			"type": "Polygon",
- 			"coordinates": [ [1,1], [0,1], [0,0], [1,0] ]
- 		}
-   }
-*/
-
-/*
- * Takes a slice of interface{}, each of which must be []float64
- * arity 2 for x,y coords
- */
+// The array in the JSON is interface{}, this helper casts and converts
+// to a geos Coord value.
+// TODO: Needs error handling
 func toGeosCoords(s []interface{}) []geos.Coord {
 	var geomcoords []geos.Coord
 	for _, cp := range s {
@@ -42,6 +28,7 @@ func toGeosCoords(s []interface{}) []geos.Coord {
 	return geomcoords
 }
 
+// Convert the GeoJSON map to a geometry object to work with
 func JsonToGeometry(g map[string]interface{}) (*geos.Geometry, error) {
 	var geomcoords []geos.Coord
 	var geom *geos.Geometry
@@ -81,6 +68,9 @@ func JsonToGeometry(g map[string]interface{}) (*geos.Geometry, error) {
 	return geom, nil
 }
 
+// ExtGeoJSONWithin matches against a message value that is a Point or Polygon
+// and is a positive match when the message value is 'within' the subscription
+// polygon completely.
 func ExtGeoJSONWithin(mval interface{}, sval map[string]interface{}) bool {
 	var messageGeom *geos.Geometry
 	var specGeom *geos.Geometry

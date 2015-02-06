@@ -2,9 +2,6 @@ package exchange
 
 import "fmt"
 
-/*
- * Exchange
- */
 type Exchange struct {
 	Name       string
 	Queues     []*Queue
@@ -14,9 +11,6 @@ type Exchange struct {
 	deadQueues chan *Queue
 }
 
-/*
- * Exchange constructor
- */
 func NewExchange() *Exchange {
 	return &Exchange{
 		"TestExchange",
@@ -27,11 +21,9 @@ func NewExchange() *Exchange {
 		make(chan *Queue)}
 }
 
-/*
- * The QueueMgr basically listens for data coming in on various
- * channels that signals management operations for the queues on
- * the exchange.
- */
+// The QueueMgr basically listens for data coming in on various
+// channels that signals management operations for the queues on
+// the exchange.
 func (e *Exchange) QueueMgr() {
 	for {
 		select {

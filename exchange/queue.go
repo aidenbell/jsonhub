@@ -1,8 +1,6 @@
-/*
-The Queue package.
-Queues are bound to an exchange and the exchange routes messages in to the queue. Queues can
-distribute messages to and define clients and their semantics.
-*/
+// The Queue package.
+// Queues are bound to an exchange and the exchange routes messages in to the queue. Queues can
+// distribute messages to and define clients and their semantics.
 package exchange
 
 import (
@@ -24,21 +22,18 @@ type Exchanger interface {
 
 type DistType int
 
-/*
-WIP Distribution types. Clients on the same
-queue get given messages based on the distribution
-type
-*/
+// WIP Distribution types. Clients on the same
+// queue get given messages based on the distribution
+// type
 const (
-	DistBroadcast DistType = iota
-	DistRandom
-	DistRoundRobin
+	DistBroadcast DistType = iota	// Send messages to all clients on the queue
+	DistRandom										// Send to a random client
+	DistRoundRobin								// Balance across clients
 )
 
-/*
-A basic queue that accepts a list of clients and matches messages against a match specification.
-The queue has various configuration options.
-*/
+
+// A basic queue that accepts a list of clients and matches messages against a
+// match specification. The queue has various configuration options.
 type Queue struct {
 	Exchange    Exchanger
 	In          chan Messager
@@ -53,10 +48,8 @@ type Queue struct {
 	distMethod DistType // What distribution of messages to clients?
 }
 
-/*
- * We define sensible defaults on new queues
- * then allow configuration via methods
- */
+// We define sensible defaults on new queues
+// then allow configuration via methods
 func NewQueue(e Exchanger, spec string) *Queue {
 	// Create a queue for the client
 	q := Queue{
@@ -94,14 +87,13 @@ func (q *Queue) DistMethod() DistType {
 	return q.distMethod
 }
 
-/*
-A goroutine for managing the client list.
-reads clients joining and leaving the queue from channels
-and modifies the list.
 
-It also reads messages from the In chan and sends those
-messages to clients based on the DistMethod of the queue.
-*/
+// A goroutine for managing the client list.
+// reads clients joining and leaving the queue from channels
+// and modifies the list.
+//
+// It also reads messages from the In chan and sends those
+// messages to clients based on the DistMethod of the queue.
 func (q *Queue) clientMgr() {
 	for {
 		select {
@@ -134,30 +126,27 @@ func (q *Queue) clientMgr() {
 	}
 }
 
-/*
-Add a client to the queue in the form of a channel being read by some client
-handling code. A "client" to the queue is just a channel accepting messages.
-*/
+
+// Add a client to the queue in the form of a channel being read by some client
+// handling code. A "client" to the queue is just a channel accepting messages.
 func (q *Queue) AddClient(c chan Messager) {
 	q.newClients <- c
 }
 
-/*
-Remove a client from the queue. The client will not get any more messages.
-It is up to the client handling code to cleanup any resources.
-*/
+// Remove a client from the queue. The client will not get any more messages.
+// It is up to the client handling code to cleanup any resources.
 func (q *Queue) RemoveClient(c chan Messager) {
 	q.deadClients <- c
 }
 
-/*
-Start the asynchronous process that starts the queue consuming messages
-and distributing them to clients.
-*/
+// Start the asynchronous process that starts the queue consuming messages
+// and distributing them to clients.
 func (q *Queue) Run() {
 	go q.clientMgr()
 }
 
+// Test if a message matches the specification of the queue
+// returning True if the message can be added and false if not
 func (q *Queue) MessageMatches(m Messager) bool {
 	// parse the message JSON
 	parsed := map[string]interface{}{}
@@ -168,7 +157,7 @@ func (q *Queue) MessageMatches(m Messager) bool {
 	}
 
 	// Parse the spec JSON
-	// TODO: Move to queue creation
+	// TODO: Move to queue creation so we don't need to do it every time
 	parsed_spec := map[string]interface{}{}
 	err = json.Unmarshal([]byte(q.MatchSpec), &parsed_spec)
 
@@ -180,11 +169,16 @@ func (q *Queue) MessageMatches(m Messager) bool {
 	return matchObject(parsed, parsed_spec)
 }
 
+// A general function for matching an input parsed JSON message
+// and a parsed subscription specification
 func matchObject(parsed map[string]interface{}, parsed_spec map[string]interface{}) bool {
+	// TODO: Change the terminology to message and subscription so it isn't
+	// so confusing to read.
 
-	// Run the comparitors
 	matches := true // Does this message attribute match the spec?
 
+	// Loop through each attribute on the subscription. This is important
+	// and allows empty subscriptions to match all.
 	for k, sv := range parsed_spec {
 		v := parsed[k]
 

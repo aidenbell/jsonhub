@@ -5,8 +5,11 @@ import "net/http"
 
 import "github.com/aidenbell/jsonhub/exchange"
 
+// main creates a HTTP server and adds the HTML client handler
+// creates an Exchange and binds its handler to the root URL. This
+// is a good place to add other handlers in future.
 func main() {
-	log.Println("JSON Message Queue")
+	log.Println("jsonhub!")
 
 	// Make an exchange
 	ex := exchange.NewExchange()
