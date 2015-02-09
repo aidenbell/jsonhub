@@ -9,32 +9,39 @@ package exchange
 
 import "fmt"
 
-// Defines the interface of an Exchange. Anything that satisfies this
-// interface we can treat as an Exchange.
-// An exchange is just something that accepts messages and accepts subscribers.
-type Exchanger interface {
-	Send(Messager)
-	AddQueue(*Queue)
-	RemoveQueue(*Queue)
+// A subscriber is something that can Receive messages
+type Subscriber interface {
+	Receive(Messager)
+}
+
+// A publisher is something that accepts Subscribers and you can publish
+// message through
+type Publisher interface {
+	Subscribe(Publisher)
+	Unsubscribe(Publisher)
+}
+
+// Something that can act as both a Publisher and Subscriber
+type PubSuber interface {
+	Publisher
+	Subscriber
 }
 
 type Exchange struct {
-	Name       string
-	Queues     []*Queue
-	Exit       chan int
-	In         chan Messager
-	newQueues  chan *Queue
-	deadQueues chan *Queue
+	subscribers     []Subscriber
+	exit       chan int
+	in         chan Messager
+	pushSub  	 chan Subscriber
+	popSub chan Subscriber
 }
 
 func NewExchange() *Exchange {
 	return &Exchange{
-		"TestExchange",
-		make([]*Queue, 0),
+		make([]Subscriber, 0),
 		make(chan int),
-		make(chan Messager),
-		make(chan *Queue),
-		make(chan *Queue)}
+		make(chan Messager),				// Our input queue
+		make(chan Subscriber), 			// New subscribers
+		make(chan Subscriber)}			// Unsubscribers
 }
 
 // The QueueMgr basically listens for data coming in on various
@@ -43,59 +50,44 @@ func NewExchange() *Exchange {
 func (e *Exchange) QueueMgr() {
 	for {
 		select {
-		case q := <-e.newQueues:
-			e.Queues = append(e.Queues, q)
+		case sub := <-e.pushSub:
+			e.subscribers = append(e.subscribers, sub)
 
-		case d := <-e.deadQueues:
-			for i, v := range e.Queues {
-				if v == d {
-					e.Queues = append(e.Queues[:i], e.Queues[i+1:]...)
+		case unsub := <-e.popSub:
+			for i, sub := range e.subscribers {
+				if sub == unsub {
+					e.subscribers = append(e.subscribers[:i], e.subscribers[i+1:]...)
 				}
 			}
 
-		case m := <-e.In:
-			for _, q := range e.Queues {
-				if q.MessageMatches(m) == true {
-					// TODO: Make q.Send() and move to there.
-					if q.PingOnly() {
-						pingMsg := NewJsonMessage("{}") // Empty ping message.
-						select {
-						case q.In <- pingMsg:
-						default:
-						}
-					} else {
-						select {
-						case q.In <- m:
-						default:
-						}
-					}
-				}
+		case m := <-e.in:
+			for _, sub := range e.subscribers {
+				sub.Receive(m)
 			}
 		}
 	}
 }
 
-func (e *Exchange) AddQueue(q *Queue) {
+func (e *Exchange) Subscribe(sub Subscriber) {
 	// This guard isn't really needed?
 	select {
-	case e.newQueues <- q:
+	case e.pushSub <- sub:
 	default:
 	}
 }
 
-func (e *Exchange) RemoveQueue(q *Queue) {
-	e.deadQueues <- q
+func (e *Exchange) Unsubscribe(sub Publisher) {
+	e.popSub <- sub
 }
 
 func (e *Exchange) Run() {
 	go e.QueueMgr()
 }
 
-func (e *Exchange) Send(m Messager) {
-
+func (e *Exchange) Publish(m Messager) {
 	select {
 	case e.In <- m:
-		fmt.Printf("Exchange.Send() got %T -> %s\n", m, m.Raw())
+		fmt.Printf("Exchange.Publish() got %T -> %s\n", m, m.Raw())
 	default:
 	}
 }
