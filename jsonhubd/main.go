@@ -1,3 +1,16 @@
+// The jsonhubd command is a server that creates an Exchange and provides a
+// simple test client for publishing and subscribing. You can find the test
+// client at http://localhost:9977 after running the program.
+//
+// This command is pretty under-developed at this point. Running it is pretty
+// simple
+//
+//	]$ cd $GOPATH/src/github.com/aidenbell/jsonhub/jsonhubd
+//	]$ $GOPATH/bin/jsonhubd
+//
+// The requirement to change directory to the source location of jsonhubd
+// exists because the test client's HTML is located and served from there.
+// This requirement will not exist in a release version.
 package main
 
 import "log"
@@ -20,6 +33,6 @@ func main() {
 
 	// For POSTing messages to the exchange
 	http.Handle("/", ex)
-	log.Println("Running server on port 9977")
+	log.Println("Running server http://localhost:9977")
 	http.ListenAndServe(":9977", nil)
 }

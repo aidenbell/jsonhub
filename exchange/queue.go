@@ -1,6 +1,3 @@
-// The Queue package.
-// Queues are bound to an exchange and the exchange routes messages in to the queue. Queues can
-// distribute messages to and define clients and their semantics.
 package exchange
 
 import (
@@ -14,6 +11,7 @@ import (
 	"github.com/aidenbell/jsonhub/match_modules/ext_geojson"
 )
 
+// TODO: move this
 type Exchanger interface {
 	Send(Messager)
 	AddQueue(*Queue)
@@ -34,6 +32,8 @@ const (
 
 // A basic queue that accepts a list of clients and matches messages against a
 // match specification. The queue has various configuration options.
+// TODO make a Queue a type of exchange and have it implement that to allow
+// nested layouts
 type Queue struct {
 	Exchange    Exchanger
 	In          chan Messager

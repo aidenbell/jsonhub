@@ -1,3 +1,10 @@
+// The exchange package defines the core mechanics of jsonhub. It defined what
+// an exchange is, how Queues have messages delivered to them and how we push
+// messages to an Exchange.
+//
+// All of the functionality available through the jsonhubd command should be
+// available by easily composing types from this package (or types implementing
+// their interfaces).
 package exchange
 
 import "fmt"
