@@ -11,13 +11,6 @@ import (
 	"github.com/aidenbell/jsonhub/match_modules/ext_geojson"
 )
 
-// TODO: move this
-type Exchanger interface {
-	Send(Messager)
-	AddQueue(*Queue)
-	RemoveQueue(*Queue)
-}
-
 type DistType int
 
 // WIP Distribution types. Clients on the same

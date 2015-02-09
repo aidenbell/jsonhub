@@ -9,6 +9,15 @@ package exchange
 
 import "fmt"
 
+// Defines the interface of an Exchange. Anything that satisfies this
+// interface we can treat as an Exchange.
+// An exchange is just something that accepts messages and accepts subscribers.
+type Exchanger interface {
+	Send(Messager)
+	AddQueue(*Queue)
+	RemoveQueue(*Queue)
+}
+
 type Exchange struct {
 	Name       string
 	Queues     []*Queue
