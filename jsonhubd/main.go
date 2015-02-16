@@ -26,13 +26,16 @@ func main() {
 
 	// Make an exchange
 	ex := exchange.NewExchange()
-	ex.Run()
+
+	log.Println("Making HTTPPubSub")
+	// Make a HTTP handler for the exchange
+	httpBinding := exchange.NewHTTPPubSub(ex)
 
 	// For clients polling from the exchange
 	http.Handle("/client/", http.HandlerFunc(HtmlClientHandler))
 
 	// For POSTing messages to the exchange
-	http.Handle("/", ex)
+	http.Handle("/", httpBinding)
 	log.Println("Running server http://localhost:9977")
 	http.ListenAndServe(":9977", nil)
 }

@@ -11,136 +11,63 @@ import (
 	"github.com/aidenbell/jsonhub/match_modules/ext_geojson"
 )
 
-type DistType int
-
-// WIP Distribution types. Clients on the same
-// queue get given messages based on the distribution
-// type
-const (
-	DistBroadcast DistType = iota	// Send messages to all clients on the queue
-	DistRandom										// Send to a random client
-	DistRoundRobin								// Balance across clients
-)
-
-
-// A basic queue that accepts a list of clients and matches messages against a
+// ClientPool A basic queue that accepts a list of clients and matches messages against a
 // match specification. The queue has various configuration options.
 // TODO make a Queue a type of exchange and have it implement that to allow
 // nested layouts
-type Queue struct {
-	Exchange    Exchanger
-	In          chan Messager
-	Clients     []chan Messager
-	MatchSpec   string
-	newClients  chan chan Messager
-	deadClients chan chan Messager
-	exitChan    chan int
+type ClientPool struct {
+	*Exchange // ClientPool is an extended exchange
 
-	// Queue options
-	pingOnly   bool     // You get empty messages, not the src message. Useful for counting
-	distMethod DistType // What distribution of messages to clients?
+	Parent    Publisher
+	matchSpec map[string]interface{}
+	pingOnly  bool // You get empty messages, not the src message. Useful for counting
 }
 
-// We define sensible defaults on new queues
-// then allow configuration via methods
-func NewQueue(e Exchanger, spec string) *Queue {
+// NewClientPool is the constructor for ClientPool instances
+func NewClientPool(parent Publisher, spec string) (*ClientPool, error) {
+	// Parse the spec JSON
+	parsedSpec := map[string]interface{}{}
+	err := json.Unmarshal([]byte(spec), &parsedSpec)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a queue for the client
-	q := Queue{
-		e,
-		make(chan Messager),
-		make([]chan Messager, 0),
-		spec,
-		make(chan chan Messager),
-		make(chan chan Messager),
-		make(chan int),
-		false,
-		DistBroadcast} // TODO: Make configurable
-
-	return &q
+	q := ClientPool{
+		NewExchange(),
+		parent,
+		parsedSpec,
+		false}
+	return &q, nil
 }
 
-// If true, clients get an empty message or "ping" when a message matches rather
-// than the complete source message.
-func (q *Queue) SetPingOnly(p bool) {
+// Receive a message from somewhere. This is the outcome of a subscription
+// and allows the ClientPool to meet the Subscriber interface
+func (q *ClientPool) Receive(m Messager) {
+	log.Printf("Client Pool Receive()")
+	go func() {
+		if q.messageMatches(m) {
+			log.Printf("Message matches!")
+			q.Publish(m)
+		}
+	}()
+}
+
+// SetPingOnly allows switching the client pool between full message delivery
+// and empty message. Useful if you are implementing a counter a group of
+// clients that don't require a full message to do their job.
+func (q *ClientPool) SetPingOnly(p bool) {
 	q.pingOnly = p
 }
 
-// Getter for ping only setting
-func (q *Queue) PingOnly() bool {
+// PingOnly is the getter for the current PingOnly state
+func (q *ClientPool) PingOnly() bool {
 	return q.pingOnly
-}
-
-// Set the distribution method of the queue, such as broadcast, round-robin or random
-func (q *Queue) SetDistMethod(d DistType) {
-	q.distMethod = d
-}
-
-// Getter for the distribution method
-func (q *Queue) DistMethod() DistType {
-	return q.distMethod
-}
-
-
-// A goroutine for managing the client list.
-// reads clients joining and leaving the queue from channels
-// and modifies the list.
-//
-// It also reads messages from the In chan and sends those
-// messages to clients based on the DistMethod of the queue.
-func (q *Queue) clientMgr() {
-	for {
-		select {
-		case c := <-q.newClients:
-			log.Printf("Client (o_o) %p\n", c)
-			q.Clients = append(q.Clients, c)
-
-		case d := <-q.deadClients:
-			for i, v := range q.Clients {
-				if v == d {
-					log.Printf("Client (x_x) %p\n", d)
-					q.Clients = append(q.Clients[:i], q.Clients[i+1:]...)
-				}
-			}
-			if len(q.Clients) == 0 {
-				log.Printf("Queue (x_x) %p\n", q)
-				q.Exchange.RemoveQueue(q)
-				return
-			}
-
-		case m := <-q.In:
-			// Basic "send to all"
-			for _, c := range q.Clients {
-				select {
-				case c <- m:
-				default:
-				}
-			}
-		}
-	}
-}
-
-
-// Add a client to the queue in the form of a channel being read by some client
-// handling code. A "client" to the queue is just a channel accepting messages.
-func (q *Queue) AddClient(c chan Messager) {
-	q.newClients <- c
-}
-
-// Remove a client from the queue. The client will not get any more messages.
-// It is up to the client handling code to cleanup any resources.
-func (q *Queue) RemoveClient(c chan Messager) {
-	q.deadClients <- c
-}
-
-// Start the asynchronous process that starts the queue consuming messages
-// and distributing them to clients.
-func (q *Queue) Run() {
-	go q.clientMgr()
 }
 
 // Test if a message matches the specification of the queue
 // returning True if the message can be added and false if not
-func (q *Queue) MessageMatches(m Messager) bool {
+func (q *ClientPool) messageMatches(m Messager) bool {
 	// parse the message JSON
 	parsed := map[string]interface{}{}
 	err := json.Unmarshal([]byte(m.Raw()), &parsed)
@@ -149,22 +76,12 @@ func (q *Queue) MessageMatches(m Messager) bool {
 		return false
 	}
 
-	// Parse the spec JSON
-	// TODO: Move to queue creation so we don't need to do it every time
-	parsed_spec := map[string]interface{}{}
-	err = json.Unmarshal([]byte(q.MatchSpec), &parsed_spec)
-
-	if err != nil {
-		fmt.Println("Error parsing spec JSON:", err)
-		return false
-	}
-
-	return matchObject(parsed, parsed_spec)
+	return matchObject(parsed, q.matchSpec)
 }
 
 // A general function for matching an input parsed JSON message
 // and a parsed subscription specification
-func matchObject(parsed map[string]interface{}, parsed_spec map[string]interface{}) bool {
+func matchObject(msg map[string]interface{}, spec map[string]interface{}) bool {
 	// TODO: Change the terminology to message and subscription so it isn't
 	// so confusing to read.
 
@@ -172,8 +89,8 @@ func matchObject(parsed map[string]interface{}, parsed_spec map[string]interface
 
 	// Loop through each attribute on the subscription. This is important
 	// and allows empty subscriptions to match all.
-	for k, sv := range parsed_spec {
-		v := parsed[k]
+	for k, sv := range spec {
+		v := msg[k]
 
 		// If there is an attribute in the spec that isn't in
 		// the message, that counts as a fail. The spec definition implies "attribute exists"
