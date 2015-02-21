@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Jsonhub by aidenbell</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Jsonhub</h1>
+        <p>The JSON Pub/Sub</p>
+
+        <p class="view"><a href="https://github.com/aidenbell/jsonhub">View the Project on GitHub <small>aidenbell/jsonhub</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/aidenbell/jsonhub/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/aidenbell/jsonhub/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/aidenbell/jsonhub">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="jsonhub---a-pattern-matching-pubsub" class="anchor" href="#jsonhub---a-pattern-matching-pubsub" aria-hidden="true"><span class="octicon octicon-link"></span></a>jsonhub - A Pattern Matching Pub/Sub</h1>
+
+<p>A publish/subscribe message queue with JSON pattern matching based subscriptions.</p>
+
+<p>Any JSON value is a valid message and clients can subscribe to an exchange using a description of the JSON messages they wish to match against. The client will then obtain messages that match the pattern. Subscription patterns are themselves JSON and can contain "match values" to specify more complex matching such as greater-than and less-than matches, geospatial matches and case insensitive matches.</p>
+
+<h2>
+<a id="install" class="anchor" href="#install" aria-hidden="true"><span class="octicon octicon-link"></span></a>Install</h2>
+
+<p>As jsonhub is a Go application, downloading and building it is pretty easy if you have the Go tools installed and setup. Just run</p>
+
+<div class="highlight highlight-sh"><pre>go get github.com/aidenbell/jsonhub/jsonhubd</pre></div>
+
+<p>and then</p>
+
+<div class="highlight highlight-sh"><pre>]$ <span class="pl-s3">cd</span> <span class="pl-vo">$GOPATH</span>/src/github.com/aidenbell/jsonhub/jsonhubd
+]$ <span class="pl-vo">$GOPATH</span>/bin/jsonhubd
+2015/02/04 23:21:40 JSON Message Queue
+2015/02/04 23:21:40 Running server on port 9977</pre></div>
+
+<p>You can then find a Javascript test client at http://localhost:9977/client/ , POSTing JSON and listening for messages happens on http://localhost:9977/ .</p>
+
+<h2>
+<a id="example-messages-and-subscriptions" class="anchor" href="#example-messages-and-subscriptions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example Messages and Subscriptions</h2>
+
+<h3>
+<a id="example-published-message" class="anchor" href="#example-published-message" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example Published Message</h3>
+
+<p>Imagine an RFID office entry system for a shared office building. Every time a person uses their entry card, a message detailing the access is sent to the message queue with the details of the person and the area of the building their card gives them access to.</p>
+
+<div class="highlight highlight-json"><pre>{
+  <span class="pl-s1"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>Dave<span class="pl-pds">"</span></span>,
+  <span class="pl-s1"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span> : <span class="pl-c1">22</span>,
+  <span class="pl-s1"><span class="pl-pds">"</span>occupation<span class="pl-pds">"</span></span>: <span class="pl-s1"><span class="pl-pds">"</span>Programmer<span class="pl-pds">"</span></span>,
+  <span class="pl-s1"><span class="pl-pds">"</span>hardware<span class="pl-pds">"</span></span> : [ <span class="pl-s1"><span class="pl-pds">"</span>monitor<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>workstation<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>laptop<span class="pl-pds">"</span></span>, <span class="pl-s1"><span class="pl-pds">"</span>chair<span class="pl-pds">"</span></span> ],
+  <span class="pl-s1"><span class="pl-pds">"</span>employer<span class="pl-pds">"</span></span> : {
+    <span class="pl-s1"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>: <span class="pl-s1"><span class="pl-pds">"</span>Big Co Inc<span class="pl-pds">"</span></span>,
+    <span class="pl-s1"><span class="pl-pds">"</span>address1<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>123 BigCo Lane<span class="pl-pds">"</span></span>,
+    <span class="pl-s1"><span class="pl-pds">"</span>address2<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>Businesston<span class="pl-pds">"</span></span>,
+    <span class="pl-s1"><span class="pl-pds">"</span>postcode<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>ABC XYZ<span class="pl-pds">"</span></span>
+  },
+  <span class="pl-s1"><span class="pl-pds">"</span>access_area<span class="pl-pds">"</span></span>: {
+    <span class="pl-s1"><span class="pl-pds">"</span>type<span class="pl-pds">"</span></span>: <span class="pl-s1"><span class="pl-pds">"</span>Polygon<span class="pl-pds">"</span></span>,
+    <span class="pl-s1"><span class="pl-pds">"</span>coordinates<span class="pl-pds">"</span></span>: [
+      [ [<span class="pl-c1">100.0</span>, <span class="pl-c1">0.0</span>], [<span class="pl-c1">101.0</span>, <span class="pl-c1">0.0</span>], [<span class="pl-c1">101.0</span>, <span class="pl-c1">1.0</span>], [<span class="pl-c1">100.0</span>, <span class="pl-c1">1.0</span>], [<span class="pl-c1">100.0</span>, <span class="pl-c1">0.0</span>] ]
+    ]
+  },
+  <span class="pl-s1"><span class="pl-pds">"</span>door<span class="pl-pds">"</span></span>: <span class="pl-s1"><span class="pl-pds">"</span>stair-22<span class="pl-pds">"</span></span>,
+  <span class="pl-s1"><span class="pl-pds">"</span>granted<span class="pl-pds">"</span></span> : <span class="pl-c1">true</span>
+}</pre></div>
+
+<h3>
+<a id="sub-1-value-comparison" class="anchor" href="#sub-1-value-comparison" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sub 1: Value Comparison</h3>
+
+<p>An client could subscribe using the following pattern and obtain the details of any programmer aged 22
+accessing the building</p>
+
+<div class="highlight highlight-json"><pre>{
+  <span class="pl-s1"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span> : <span class="pl-c1">22</span>,
+  <span class="pl-s1"><span class="pl-pds">"</span>occupation<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>Programmer<span class="pl-pds">"</span></span>
+}</pre></div>
+
+<h3>
+<a id="sub-2-using-matcher-values" class="anchor" href="#sub-2-using-matcher-values" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sub 2: Using Matcher Values</h3>
+
+<p>We can also use "matchers" to find all programmers older than 22 entering the building</p>
+
+<div class="highlight highlight-json"><pre>{
+  <span class="pl-s1"><span class="pl-pds">"</span>age<span class="pl-pds">"</span></span> : {
+      <span class="pl-s1"><span class="pl-pds">"</span>__match__<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>greater-than<span class="pl-pds">"</span></span>,
+      <span class="pl-s1"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span> : <span class="pl-c1">22</span>
+    },
+  <span class="pl-s1"><span class="pl-pds">"</span>occupation<span class="pl-pds">"</span></span> : {
+    <span class="pl-s1"><span class="pl-pds">"</span>__match__<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>case-insensitive<span class="pl-pds">"</span></span>,
+    <span class="pl-s1"><span class="pl-pds">"</span>value<span class="pl-pds">"</span></span> : <span class="pl-s1"><span class="pl-pds">"</span>programmer<span class="pl-pds">"</span></span>
+  }
+}</pre></div>
+
+<h3>
+<a id="sub-3-match-everything" class="anchor" href="#sub-3-match-everything" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sub 3: Match Everything</h3>
+
+<p>You can match against all messages using an empty subscription</p>
+
+<div class="highlight highlight-json"><pre>{}</pre></div>
+
+<p>This is because subscriptions match unless a portion of the pattern does <em>not</em>
+match against the message. Each attribute of a subscription object must match the message. If you provide no attributes, there are no match constraints to fail. This allows you to only list your constraints when matching without having to describe an entire object.</p>
+
+<h2>
+<a id="matchers" class="anchor" href="#matchers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Matchers</h2>
+
+<p>Aside from basic value comparison, subscriptions can contain special "matcher" objects that describe more complex matches in JSON format. The following matchers are supported (todo: link these to .md files)</p>
+
+<ul>
+<li><a href="https://github.com/aidenbell/jsonhub/blob/master/match_modules/ext_ci_match/README.md">Case insensitive string matching</a></li>
+<li>GeoJSON based 'within'</li>
+</ul>
+
+<h2>
+<a id="server-sent-events" class="anchor" href="#server-sent-events" aria-hidden="true"><span class="octicon octicon-link"></span></a>Server Sent Events</h2>
+
+<p>Currently matching messages are polled via <a href="http://dev.w3.org/html5/eventsource/">Server Sent Events</a>. Websocket support and other protocols are planned.</p>
+
+<h2>
+<a id="future" class="anchor" href="#future" aria-hidden="true"><span class="octicon octicon-link"></span></a>Future</h2>
+
+<p>Future and needed features include</p>
+
+<ul>
+<li>Websocket support</li>
+<li>Multiple named exchanges</li>
+<li>Configurable message distribution for equivalent patterns (round-robin, random)</li>
+<li>Negations in patterns</li>
+<li>Various matchers</li>
+<li>Support for sending arrays of messages and providing arrays of subscriptions</li>
+</ul>
+
+<h2>
+<a id="disclaimer" class="anchor" href="#disclaimer" aria-hidden="true"><span class="octicon octicon-link"></span></a>Disclaimer</h2>
+
+<p>This is a little side project I use to learn Go. The source probably isn't very nice or idiomatic, but as I learn I refactor and improve it. It is also missing some important features like negation, tests, documentation etc. Pull requests welcome.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/aidenbell">aidenbell</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
