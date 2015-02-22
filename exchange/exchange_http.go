@@ -37,11 +37,7 @@ func (c *httpChanClient) Receive(m Messager) {
 func (s *HTTPPubSub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var spec string
 
-	// Double check path
-	if r.URL.Path != "/" {
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
+	log.Println("In ServeHTTP")
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
